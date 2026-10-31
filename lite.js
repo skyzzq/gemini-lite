@@ -285,6 +285,25 @@ immersive-panel.gml-live pre {
     } catch (e) {}
   }
 
+  /* 面板张着的时候还在流式追加内容（新报告边生成边长）。
+     只靠放出那一刻扫一遍，后来的块全都裸奔，布局成本又回来了 ——
+     所以挂一个防抖 MutationObserver 持续补标记。 */
+  let cvObs = null, cvTimer = 0;
+  function watchBlocks() {
+    if (cvObs) return;
+    const run = () => {
+      cvTimer = 0;
+      for (const p of document.querySelectorAll(PANEL_SEL)) {
+        if (p.classList.contains('gml-live')) decorateForSpeed(p);
+      }
+    };
+    cvObs = new MutationObserver(() => {
+      if (cvTimer) return;
+      cvTimer = setTimeout(run, 300);
+    });
+    cvObs.observe(document.body || document.documentElement, { childList: true, subtree: true });
+  }
+
   /* 对话区的滚动位置：面板张开会改高度，Gemini 会把对话滚到底部。
      这里在张开的瞬间记下位置，布局稳定后再放回去，并在稍后补两次，
      给 Gemini 自己的 autoscroll 留出时间窗；用户一旦自己滚了就立刻停手。 */
@@ -344,6 +363,7 @@ immersive-panel.gml-live pre {
          放出后连发两帧 rAF 再 dispatch resize，让横向滚动容器重算 scrollWidth。 */
       if (els.length) {
         decorateForSpeed(els[0]);
+        try { watchBlocks(); } catch (e) {}
         /* 记下对话区当前的滚动位置：面板进布局树会改变可用高度，
            Gemini 自己又会把对话滚到底部（它对 resize/高度变化有 autoscroll），
            所以这里既不去派发 window 的 resize，也在布局后把位置还原。 */
@@ -384,15 +404,19 @@ immersive-panel.gml-live pre {
           hiddenAt.delete(p);
         }
         const now = Date.now();
-        const st = seen.get(p) || { last: -1, stable: 0, since: now };
-        if (n === st.last) st.stable++; else { st.stable = 0; st.last = n; }
+        const st = seen.get(p) || { last: -1, stable: 0, since: now, grew: now };
+        if (n === st.last) st.stable++;
+        else { st.stable = 0; st.last = n; st.grew = now; }
         seen.set(p, st);
         /* 太早放出来 = 边建边布局，5.6 万节点会一直重排（实测又回到 125% CPU）。
            要连续 3 次（约 2.1s）节点数不变才算长完；超过 20s 还没稳定就兜底放行。 */
-        const done = st.stable >= 3 && n > 800;   // 大面板：等它真的建完
-        const small = st.stable >= 3 && n > 0;    // 小面板：2.1s 稳定就放，别一直藏着
-        const giveUp = now - st.since > 20000 && n > 200;
-        if (done || small || giveUp) { showPanel(true); seen.delete(p); try { sync(); } catch (e) {} }
+        /* 判据只有两条，都是为了别在"还在生成"的时候把它放进布局树：
+           ① 连续 6 秒没有新节点（网络停顿会让计数短暂不动，2.1s 根本不够，
+              实测提前放出立刻回到 134% CPU 把主线程占死）；
+           ② 45 秒兜底，避免某些报告一直缓慢增长导致面板永远不出现。 */
+        const idle = n > 0 && now - (st.grew || st.since) > 6000;
+        const giveUp = now - st.since > 45000;
+        if (idle || giveUp) { showPanel(true); seen.delete(p); try { sync(); } catch (e) {} }
       }
     }, 700);
   })();

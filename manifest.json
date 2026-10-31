@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Gemini Lite",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "针对 Gemini 长报告（Deep Research 面板）的定点优化：延迟进布局树 + 正文 content-visibility + 浮层/默认位置切换 + 五档字号。",
   "minimum_chrome_version": "111",
   "permissions": [
