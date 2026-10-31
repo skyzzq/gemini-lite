@@ -425,6 +425,7 @@ immersive-panel.gml-live pre {
    * 4. 面板顶部的两个按钮（默认位置 / 收起）
    * ============================================================ */
   let toolbar = null, btnFloat = null, btnHide = null, fontSel = null;
+  let btnExport = null, exportMenu = null, exportWrap = null, exportTimer = 0;
 
   function btnCss() {
     return 'padding:6px 13px;border-radius:8px;cursor:pointer;' +
@@ -432,6 +433,28 @@ immersive-panel.gml-live pre {
       'color:#e8eaed;font:600 12px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;' +
       'box-shadow:0 2px 10px rgba(0,0,0,.45);pointer-events:auto;-webkit-user-select:none;';
   }
+
+  function flashExport(msg) {
+    if (!btnExport) return;
+    exportMenu.style.display = 'none';
+    btnExport.textContent = msg;
+    if (exportTimer) clearTimeout(exportTimer);
+    exportTimer = setTimeout(() => {
+      exportTimer = 0;
+      if (btnExport) btnExport.textContent = '⤓ 导出';
+    }, 1200);
+  }
+
+  /* 点面板别处 / 按 Esc 就把菜单收起来 */
+  function closeExportOnOutside(ev) {
+    if (!exportMenu || exportMenu.style.display !== 'flex') return;
+    if (exportWrap && exportWrap.contains(ev.target)) return;
+    exportMenu.style.display = 'none';
+  }
+  document.addEventListener('pointerdown', closeExportOnOutside, true);
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && exportMenu) exportMenu.style.display = 'none';
+  }, true);
 
   function ensureToolbar() {
     if (toolbar && toolbar.isConnected) return;
@@ -492,7 +515,71 @@ immersive-panel.gml-live pre {
     };
     fontSel.addEventListener('mousedown', (ev) => ev.stopPropagation(), true);
 
-    toolbar.append(btnFloat, fontSel, btnHide);
+    /* 导出：全部在页面本地完成。Gemini 自带的「导出到 Google 文档」会把整棵
+       报告 DOM 交给 Docs API，几百个公式逐个转码，主线程必死 —— 这里直接
+       序列化成文本下载，不联网、不转码。 */
+    exportWrap = document.createElement('span');
+    exportWrap.style.cssText = 'position:relative;display:inline-block;';
+
+    btnExport = document.createElement('button');
+    btnExport.type = 'button';
+    btnExport.style.cssText = btnCss();
+    btnExport.title = '导出这份报告（本地生成，不走 Google 文档）';
+    btnExport.textContent = '⤓ 导出';
+    btnExport.addEventListener('mousedown', (ev) => ev.stopPropagation(), true);
+
+    exportMenu = document.createElement('div');
+    exportMenu.setAttribute('data-gmlexport', '1');
+    exportMenu.style.cssText =
+      'position:absolute;top:calc(100% + 6px);right:0;width:200px;display:none;' +
+      'flex-direction:column;gap:2px;padding:6px;border-radius:10px;z-index:2147483600;' +
+      'background:rgba(32,35,42,.98);border:1px solid rgba(255,255,255,.18);' +
+      'box-shadow:0 8px 24px rgba(0,0,0,.5);pointer-events:auto;';
+    exportMenu.addEventListener('mousedown', (ev) => ev.stopPropagation(), true);
+
+    const EXPORTS = [
+      ['Markdown (.md)', () => window.__gmExport.saveMarkdown()],
+      ['Word (.docx)', () => window.__gmExport.saveDocx()],
+      ['网页 (.html)', () => window.__gmExport.saveHtml()],
+      ['复制 Markdown', () => window.__gmExport.copyMarkdown()]
+    ];
+    for (const item of EXPORTS) {
+      const label = item[0], fn = item[1];
+      const it = document.createElement('button');
+      it.type = 'button';
+      it.textContent = label;
+      it.style.cssText = 'display:block;width:100%;text-align:left;cursor:pointer;' +
+        'padding:7px 10px;border-radius:7px;border:0;background:transparent;' +
+        'color:#e8eaed;font:500 12px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;';
+      it.onmouseenter = () => { it.style.background = 'rgba(255,255,255,.10)'; };
+      it.onmouseleave = () => { it.style.background = 'transparent'; };
+      it.onclick = (ev) => {
+        if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+        if (!window.__gmExport) { flashExport('未就绪'); return; }
+        try {
+          const r = fn();
+          /* copyMarkdown 返回 Promise：剪贴板被拒时也不能变成未捕获拒绝 */
+          if (r && typeof r.catch === 'function') {
+            r.then(() => flashExport('✓ 已复制'), () => flashExport('复制被拒'));
+          } else {
+            flashExport('✓ 已导出');
+          }
+        } catch (e) {
+          console.warn('[Gemini Lite] 导出失败', e);
+          flashExport('导出失败');
+        }
+      };
+      exportMenu.appendChild(it);
+    }
+
+    btnExport.onclick = (ev) => {
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      exportMenu.style.display = exportMenu.style.display === 'flex' ? 'none' : 'flex';
+    };
+
+    exportWrap.append(btnExport, exportMenu);
+    toolbar.append(btnFloat, fontSel, exportWrap, btnHide);
+
     pnl.insertBefore(toolbar, pnl.firstChild);
   }
 

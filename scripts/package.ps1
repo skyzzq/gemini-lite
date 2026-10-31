@@ -10,7 +10,7 @@ if (Test-Path dist) { Remove-Item dist -Recurse -Force }
 New-Item -ItemType Directory dist | Out-Null
 
 $files = @(
-  'manifest.json', 'lite.js', 'bridge.js', 'popup.html', 'popup.js',
+  'manifest.json', 'lite.js', 'export.js', 'bridge.js', 'popup.html', 'popup.js',
   'icons/icon16.png', 'icons/icon32.png', 'icons/icon48.png', 'icons/icon128.png'
 )
 

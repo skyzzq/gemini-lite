@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Gemini Lite",
-  "version": "1.3.2",
-  "description": "针对 Gemini 长报告（Deep Research 面板）的定点优化：延迟进布局树 + 正文 content-visibility + 浮层/默认位置切换 + 五档字号。",
+  "version": "1.4.0",
+  "description": "针对 Gemini 长报告（Deep Research 面板）的定点优化：延迟进布局树 + 正文 content-visibility + 浮层/默认位置切换 + 五档字号 + 本地导出 Markdown/Word/HTML。",
   "minimum_chrome_version": "111",
   "permissions": [
     "storage"
@@ -39,6 +39,7 @@
         "https://aistudio.google.com/*"
       ],
       "js": [
+        "export.js",
         "lite.js"
       ],
       "run_at": "document_start",

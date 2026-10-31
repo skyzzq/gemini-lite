@@ -12,6 +12,7 @@ OUT="dist/gemini-lite-${VERSION}.zip"
 # 只放运行时需要的文件。icon1024.png 是给商店/预览用的，不进包。
 FILES=(
   manifest.json
+  export.js
   lite.js
   bridge.js
   popup.html
