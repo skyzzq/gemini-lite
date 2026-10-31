@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Gemini Lite</title>
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0; padding: 14px 16px 16px; width: 268px;
+    background: #17181c; color: #e6e8eb;
+    font: 13px/1.5 system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  }
+  .head { display: flex; align-items: center; gap: 9px; margin-bottom: 2px; }
+  .logo { width: 26px; height: 26px; border-radius: 7px; display: block; }
+  h1 { margin: 0; font-size: 14px; letter-spacing: .2px; }
+  .sub { margin: 0 0 12px; color: #8d949e; font-size: 11.5px; }
+  label.row {
+    display: flex; align-items: center; gap: 9px;
+    padding: 7px 0; cursor: pointer; user-select: none;
+  }
+  label.row input { width: 15px; height: 15px; accent-color: #4c8df6; margin: 0; }
+  label.row select {
+    margin-left: auto; font: inherit; color: #e6e8eb; cursor: pointer;
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14);
+    border-radius: 6px; padding: 3px 6px;
+  }
+  .hint { color: #7c838d; font-size: 11px; margin: -2px 0 6px 24px; }
+  .sep { height: 1px; background: rgba(255,255,255,.09); margin: 10px 0; }
+  .btns { display: flex; gap: 8px; }
+  button {
+    flex: 1; padding: 7px 8px; border-radius: 8px; cursor: pointer;
+    font: inherit; color: #e6e8eb;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.14);
+  }
+  button:hover { background: rgba(255,255,255,.14); }
+  .foot { margin-top: 10px; color: #6d747d; font-size: 10.5px; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <img class="logo" src="icons/icon48.png" alt="">
+    <h1>Gemini Lite</h1>
+  </div>
+  <p class="sub">改动立即生效，无需刷新页面。</p>
+
+  <label class="row"><input type="checkbox" id="hud"><span>显示右下角调试面板</span></label>
+  <div class="hint">默认关闭。开启后才会做每秒采样（强制布局、帧率统计），会略微增加开销。</div>
+
+  <label class="row"><input type="checkbox" id="float"><span>报告面板浮层显示</span></label>
+  <div class="hint">默认关闭，用 Gemini 自己的右侧栏；勾上则整屏浮层。</div>
+
+  <label class="row"><input type="checkbox" id="fold"><span>折叠较早的对话轮次</span></label>
+  <div class="hint">折叠只影响屏幕外的旧轮次，滚动时逐轮展开。</div>
+
+  <label class="row"><span>字号</span>
+    <select id="font">
+      <option value="11">字号：超小</option>
+      <option value="12">字号：小</option>
+      <option value="14" selected>字号：标准</option>
+      <option value="16">字号：大</option>
+      <option value="18">字号：超大</option>
+    </select>
+  </label>
+
+  <div class="sep"></div>
+
+  <div class="btns">
+    <button id="show">显示报告</button>
+    <button id="hide">收起报告</button>
+  </div>
+
+  <p class="foot">面板加载时会先隐藏，等 DOM 建完再一次性显示——这是消除卡死的关键。</p>
+
+<script src="popup.js"></script>
+</body>
+</html>

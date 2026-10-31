@@ -1,0 +1,38 @@
+name: release
+
+# 打 tag（形如 v1.3.0）时自动打包，并把 zip 挂到 GitHub Release 上。
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 校验 manifest 与版本号一致
+        run: |
+          node -e "
+            const v = require('./manifest.json').version;
+            const tag = process.env.GITHUB_REF_NAME.replace(/^v/, '');
+            if (v !== tag) { console.error('manifest version ' + v + ' != tag ' + tag); process.exit(1); }
+            console.log('version ok:', v);
+          "
+
+      - name: 打包
+        run: bash scripts/package.sh
+
+      - name: 挂到 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true
